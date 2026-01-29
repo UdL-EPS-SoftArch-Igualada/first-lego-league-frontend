@@ -1,0 +1,287 @@
+name: Pull request automation (target)
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited, closed]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+env:
+  INSTRUCTOR_GITHUB_USERNAME: ${{ vars.INSTRUCTOR_GITHUB_USERNAME }}
+
+jobs:
+  pr:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.PROJECTS_APP_ID }}
+          private-key: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+
+      - name: Check PR rules + move linked issues
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const instructor = (process.env.INSTRUCTOR_GITHUB_USERNAME || "").trim();
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            function uniq(arr) { return Array.from(new Set(arr)); }
+
+            async function addPrComment(body) {
+              await github.rest.issues.createComment({
+                owner, repo,
+                issue_number: context.payload.pull_request.number,
+                body,
+              });
+            }
+
+            async function addPrLabel(label) {
+              const existing = (context.payload.pull_request.labels || []).map(l => l.name);
+              if (existing.includes(label)) return;
+              await github.rest.issues.addLabels({
+                owner, repo,
+                issue_number: context.payload.pull_request.number,
+                labels: [label],
+              });
+            }
+
+            async function removePrLabelSafe(label) {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner, repo,
+                  issue_number: context.payload.pull_request.number,
+                  name: label,
+                });
+              } catch {}
+            }
+
+            async function removeInstructorReviewerIfRequested() {
+              if (!instructor) return;
+              const req = (context.payload.pull_request.requested_reviewers || []).map(u => (u.login || "").toLowerCase());
+              if (!req.includes(instructor.toLowerCase())) return;
+              await github.rest.pulls.removeRequestedReviewers({
+                owner, repo,
+                pull_number: context.payload.pull_request.number,
+                reviewers: [instructor],
+              });
+            }
+
+            async function requestInstructorReviewer() {
+              if (!instructor) return;
+              try {
+                await github.rest.pulls.requestReviewers({
+                  owner, repo,
+                  pull_number: context.payload.pull_request.number,
+                  reviewers: [instructor],
+                });
+              } catch {}
+            }
+
+            async function getSingleRepoProjectV2() {
+              const q = `
+                query($owner:String!, $repo:String!) {
+                  repository(owner:$owner, name:$repo) {
+                    projectsV2(first: 10) { nodes { id title } }
+                  }
+                }
+              `;
+              const res = await github.graphql(q, { owner, repo });
+              const nodes = res.repository.projectsV2.nodes || [];
+              if (nodes.length !== 1) throw new Error(`Repository must have exactly 1 linked Projects v2 project, found ${nodes.length}.`);
+              return nodes[0];
+            }
+
+            async function getStatusFieldConfig(projectId) {
+              const q = `
+                query($projectId:ID!) {
+                  node(id:$projectId) {
+                    ... on ProjectV2 {
+                      fields(first: 100) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id name options { id name }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+              const res = await github.graphql(q, { projectId });
+              const fields = res.node.fields.nodes || [];
+              const status = fields.find(f => f.name === "Status");
+              if (!status) throw new Error(`Project is missing a single-select field named "Status".`);
+              return { fieldId: status.id, options: status.options || [] };
+            }
+
+            function findSingleOptionId(options, needleLower) {
+              const matches = options.filter(o => (o.name || "").toLowerCase().includes(needleLower));
+              if (matches.length !== 1) throw new Error(`Expected exactly 1 Status option containing "${needleLower}", found ${matches.length}.`);
+              return matches[0].id;
+            }
+
+            async function getProjectItemIdForIssue(issueId, projectId) {
+              const q = `
+                query($issueId:ID!) {
+                  node(id:$issueId) {
+                    ... on Issue {
+                      projectItems(first: 50) { nodes { id project { id } } }
+                    }
+                  }
+                }
+              `;
+              const res = await github.graphql(q, { issueId });
+              const nodes = res.node.projectItems.nodes || [];
+              const match = nodes.find(n => n.project.id === projectId);
+              return match ? match.id : null;
+            }
+
+            async function addIssueToProject(projectId, issueNodeId) {
+              const m = `
+                mutation($projectId:ID!, $contentId:ID!) {
+                  addProjectV2ItemById(input:{ projectId:$projectId, contentId:$contentId }) {
+                    item { id }
+                  }
+                }
+              `;
+              const res = await github.graphql(m, { projectId, contentId: issueNodeId });
+              return res.addProjectV2ItemById.item.id;
+            }
+
+            async function setStatus(projectId, itemId, fieldId, optionId) {
+              const m = `
+                mutation($projectId:ID!, $itemId:ID!, $fieldId:ID!, $optionId:String!) {
+                  updateProjectV2ItemFieldValue(input:{
+                    projectId:$projectId,
+                    itemId:$itemId,
+                    fieldId:$fieldId,
+                    value:{ singleSelectOptionId:$optionId }
+                  }) { projectV2Item { id } }
+                }
+              `;
+              await github.graphql(m, { projectId, itemId, fieldId, optionId });
+            }
+
+            async function getClosingIssues(prNodeId) {
+              const q = `
+                query($prId:ID!) {
+                  node(id:$prId) {
+                    ... on PullRequest {
+                      closingIssuesReferences(first: 10) {
+                        nodes {
+                          id
+                          number
+                          assignees(first: 50) { nodes { login } }
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+              const res = await github.graphql(q, { prId: prNodeId });
+              return res.node.closingIssuesReferences.nodes || [];
+            }
+
+            const action = context.payload.action;
+            const pr = context.payload.pull_request;
+
+            // Branch: PR closed without merge -> move linked issues "in review" back to "in progress"
+            if (
+              action === "closed" &&
+              pr.merged === false &&
+              !(context.actor && context.actor.endsWith('[bot]'))
+            ) {
+              const issues = await getClosingIssues(pr.node_id);
+              if (issues.length === 0) return;
+
+              const project = await getSingleRepoProjectV2();
+              const status = await getStatusFieldConfig(project.id);
+              const inProgressId = findSingleOptionId(status.options, "in progress");
+
+              for (const iss of issues) {
+                let itemId = await getProjectItemIdForIssue(iss.id, project.id);
+                if (!itemId) itemId = await addIssueToProject(project.id, iss.id);
+                await setStatus(project.id, itemId, status.fieldId, inProgressId);
+              }
+              return;
+            }
+
+            // Only handle opened/updated-ish events here
+            if (!["opened", "reopened", "synchronize", "edited"].includes(action)) return;
+
+            const issues = await getClosingIssues(pr.node_id);
+
+            // 1-2) Must link an issue
+            if (issues.length === 0) {
+              await addPrLabel("pr-missing-linked-issue");
+              await addPrComment(
+                [
+                  `Hi @${pr.user?.login || ""}, this PR is not linked to any issue.`,
+                  "Please link it by editing the PR description and adding something like:",
+                  "",
+                  "```",
+                  "Closes #123",
+                  "```",
+                ].join("\n")
+              );
+              await removeInstructorReviewerIfRequested();
+              return;
+            }
+
+            // 3) PR creator must be assigned to ALL linked issues
+            const prCreator = (pr.user?.login || "").toLowerCase();
+            const notAssigned = issues
+              .filter(iss => {
+                const assignees = (iss.assignees.nodes || []).map(a => (a.login || "").toLowerCase());
+                return !assignees.includes(prCreator);
+              })
+              .map(iss => `#${iss.number}`);
+
+            if (notAssigned.length > 0) {
+              await github.rest.pulls.update({
+                owner, repo,
+                pull_number: pr.number,
+                state: "closed",
+              });
+              await addPrComment(
+                [
+                  `Hi @${pr.user?.login || ""}, your PR is trying to close these issues:`,
+                  notAssigned.map(x => `- ${x}`).join("\n"),
+                  "",
+                  "However, **you don't have permission to close them**, because you are not assigned to them. Make sure you are logged in as the correct GitHub user and that your team claimed the issue first.",
+                  "",
+                  `For security reasons, this PR will now be closed. If you believe this is an error, please ping @${instructor}.`
+                ].join("\n")
+              );
+              return;
+            }
+
+            // 4) Warn if multiple issues
+            if (issues.length > 1) {
+              await addPrComment(
+                "Warning: this PR links multiple issues. You should try to close only 1 issue in each PR."
+              );
+            }
+
+            // 5) Add instructor reviewer
+            await requestInstructorReviewer();
+
+            // 6) Move linked issues to "in review"
+            const project = await getSingleRepoProjectV2();
+            const status = await getStatusFieldConfig(project.id);
+            const inReviewId = findSingleOptionId(status.options, "in review");
+
+            for (const iss of issues) {
+              let itemId = await getProjectItemIdForIssue(iss.id, project.id);
+              if (!itemId) itemId = await addIssueToProject(project.id, iss.id);
+              await setStatus(project.id, itemId, status.fieldId, inReviewId);
+            }
+
+            // 7) Remove missing-linked-issue label if present
+            await removePrLabelSafe("pr-missing-linked-issue");

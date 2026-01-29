@@ -1,0 +1,35 @@
+name: Refactor
+description: Create a task for refactoring code.
+title: "[Refactor]: "
+labels: ["inbox"]
+projects: ["UdL-EPS-SoftArch-Igualada/4"]
+type: refactor
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Refactor description
+      description: Describe the code refactoring task. Specify which design patterns or principles will be applied.
+      placeholder: Describe the refactoring here.
+    validations:
+      required: true
+  - type: dropdown
+    id: time-estimation
+    attributes:
+      label: Time estimation
+      description: |
+        How much time do you estimate this refactor will take?
+      options:
+        - Select an option
+        - 0.25 story points (15 minutes)
+        - 0.5 story points (30 minutes)
+        - 1 story point (1 hour)
+        - 2 story points (2 hours)
+        - 3 story points (3 hours)
+        - 4 story points (4 hours)
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        For larger tasks (more than 4 story points), consider breaking them down into smaller, more manageable sub-tasks.

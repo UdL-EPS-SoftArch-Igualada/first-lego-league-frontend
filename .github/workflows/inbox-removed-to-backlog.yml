@@ -1,0 +1,32 @@
+name: Inbox removed - move to backlog
+on:
+  issues:
+    types: [unlabeled]
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  INSTRUCTOR_GITHUB_USERNAME: ${{ vars.INSTRUCTOR_GITHUB_USERNAME }}
+
+jobs:
+  move:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.PROJECTS_APP_ID }}
+          private-key: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+
+      - name: Move issue to backlog in Project v2
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const { handleInboxUnlabeled } = require('./.github/scripts/scrum/handlers.cjs');
+            await handleInboxUnlabeled({ github, context, core });

@@ -1,0 +1,32 @@
+name: Issue updated - check story points rules
+on:
+  issues:
+    types: [edited]
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  INSTRUCTOR_GITHUB_USERNAME: ${{ vars.INSTRUCTOR_GITHUB_USERNAME }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.PROJECTS_APP_ID }}
+          private-key: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+
+      - name: Check story points rules
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const { handleIssueEdited } = require('./.github/scripts/scrum/handlers.cjs');
+            await handleIssueEdited({ github, context, core });

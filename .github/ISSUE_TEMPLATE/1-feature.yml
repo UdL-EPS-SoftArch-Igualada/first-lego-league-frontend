@@ -1,0 +1,52 @@
+name: New feature
+description: Create a task for developing new features.
+title: "[Feat]: "
+labels: ["inbox"]
+projects: ["UdL-EPS-SoftArch-Igualada/4"]
+type: feature
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature description
+      description: Detailed specification of the desired behavior.
+      placeholder: Describe the feature here.
+    validations:
+      required: true
+  - type: textarea
+    id: input-output
+    attributes:
+      label: Input/output specification proposal
+      description: |
+        **Only if this is a new endpoint!** Propose possible input and output JSONs. The implementor should use them as a general guideline, but they can make changes if they need to.
+      placeholder: Example of the input and output JSONs here.
+    validations:
+      required: false
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition of done
+      description: Validation criteria for determining that the feature is complete.
+      placeholder: Step-by-step instructions a human should follow, and the expected system behavior we should observe if the feature was implemented correctly.
+    validations:
+      required: true
+  - type: dropdown
+    id: time-estimation
+    attributes:
+      label: Time estimation
+      description: |
+        How much time do you estimate this feature will take to implement? Tip: Remember to include time for writing tests.
+      options:
+        - Select an option
+        - 0.25 story points (15 minutes)
+        - 0.5 story points (30 minutes)
+        - 1 story point (1 hour)
+        - 2 story points (2 hours)
+        - 3 story points (3 hours)
+        - 4 story points (4 hours)
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        For larger tasks (more than 4 story points), consider breaking them down into smaller, more manageable sub-tasks.

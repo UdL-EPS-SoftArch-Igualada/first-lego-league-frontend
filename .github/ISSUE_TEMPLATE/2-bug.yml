@@ -1,0 +1,43 @@
+name: Bug
+description: Create a task for fixing a bug.
+title: "[Bug]: "
+labels: ["inbox"]
+projects: ["UdL-EPS-SoftArch-Igualada/4"]
+type: bug
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Error description and repro
+      description: Describe the problem **and include step-by-step instructions to reproduce it**.
+      placeholder: Describe the problem here.
+    validations:
+      required: true
+  - type: textarea
+    id: dod
+    attributes:
+      label: Definition of done
+      description: Validation criteria for determining that the bug is fixed.
+      placeholder: Describe the correct behavior that we should observe after following the reproduction steps above.
+    validations:
+      required: true
+  - type: dropdown
+    id: time-estimation
+    attributes:
+      label: Time estimation
+      description: |
+        How much time do you estimate this bug will take to fix? Tip: Remember to include time for writing tests.
+      options:
+        - Select an option
+        - 0.25 story points (15 minutes)
+        - 0.5 story points (30 minutes)
+        - 1 story point (1 hour)
+        - 2 story points (2 hours)
+        - 3 story points (3 hours)
+        - 4 story points (4 hours)
+    validations:
+      required: true
+  - type: markdown
+    attributes:
+      value: |
+        For larger tasks (more than 4 story points), consider breaking them down into smaller, more manageable sub-tasks.

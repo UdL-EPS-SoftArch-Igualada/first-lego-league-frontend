@@ -1,0 +1,32 @@
+name: Issue closed manually - remove from project
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  contents: read
+  issues: write
+
+env:
+  INSTRUCTOR_GITHUB_USERNAME: ${{ vars.INSTRUCTOR_GITHUB_USERNAME }}
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.PROJECTS_APP_ID }}
+          private-key: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
+
+      - name: Remove manually-closed issues from projects
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const { handleIssueClosed } = require('./.github/scripts/scrum/handlers.cjs');
+            await handleIssueClosed({ github, context, core });
