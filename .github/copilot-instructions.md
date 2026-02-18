@@ -10,3 +10,4 @@ Code review instructions:
 - Comments are allowed only when explaining a non-obvious design decision or trade-off. Comments documenting public APIs (docstrings and similar) are allowed but not required nor encouraged.
 - Disallow modifications to the project dependencies.
 - Clarity, correctness, and maintainability is preferred over cleverness or micro-optimizations.
+- In your code review comments, use `inline code formatting` to refer to code elements. For example: `SomeClass<String>` or `@Annotation`.
