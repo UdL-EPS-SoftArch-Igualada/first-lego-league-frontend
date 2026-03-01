@@ -1,7 +1,7 @@
 name: Pull request automation (target)
 on:
   pull_request_target:
-    types: [opened, reopened, synchronize, edited, closed]
+    types: [opened, reopened, synchronize, edited, closed, labeled]
 
 permissions:
   pull-requests: write
@@ -41,9 +41,13 @@ jobs:
               });
             }
 
-            async function addPrLabel(label) {
+            function hasPrLabel(label) {
               const existing = (context.payload.pull_request.labels || []).map(l => l.name);
-              if (existing.includes(label)) return;
+              return existing.includes(label);
+            }
+
+            async function addPrLabel(label) {
+              if (hasPrLabel(label)) return;
               await github.rest.issues.addLabels({
                 owner, repo,
                 issue_number: context.payload.pull_request.number,
@@ -191,6 +195,34 @@ jobs:
             const action = context.payload.action;
             const pr = context.payload.pull_request;
 
+            // Branch: Instructor manually adds pr-not-ready label -> move linked issues back to "in progress"
+            if (
+              action === "labeled" &&
+              context.payload.label?.name === "pr-not-ready" &&
+              instructor &&
+              context.actor.toLowerCase() === instructor.toLowerCase()
+            ) {
+              const issues = await getClosingIssues(pr.node_id);
+              if (issues.length === 0) return;
+
+              const project = await getSingleRepoProjectV2();
+              const status = await getStatusFieldConfig(project.id);
+              const inProgressId = findSingleOptionId(status.options, "in progress");
+
+              for (const iss of issues) {
+                let itemId = await getProjectItemIdForIssue(iss.id, project.id);
+                if (!itemId) itemId = await addIssueToProject(project.id, iss.id);
+                await setStatus(project.id, itemId, status.fieldId, inProgressId);
+              }
+
+              await removeInstructorReviewerIfRequested();
+
+              await addPrComment(
+                "This PR has been marked as **not ready**. Please address the review feedback and analysis warnings, and comment `ready` when complete."
+              );
+              return;
+            }
+
             // Branch: PR closed without merge -> move linked issues "in review" back to "in progress"
             if (
               action === "closed" &&
@@ -262,26 +294,27 @@ jobs:
               return;
             }
 
-            // 4) Warn if multiple issues
-            if (issues.length > 1) {
+            if (["opened", "reopened"].includes(action) || hasPrLabel("pr-missing-linked-issue")) {
+
+              // 4) Warn if multiple issues
+              if (issues.length > 1) {
+                await addPrComment(
+                  "Warning: this PR links multiple issues. You should try to close only 1 issue in each PR."
+                );
+              }
+
+              // 5) Add pr-not-ready label and comment
+              await addPrLabel("pr-not-ready");
               await addPrComment(
-                "Warning: this PR links multiple issues. You should try to close only 1 issue in each PR."
+                [
+                  `Thank you for your PR @${pr.user?.login || ""}! Now, you should **wait for the automated code analysis** by CodeRabbit, Copilot and SonarQube.`,
+                  "Please review all warnings carefully, as some of them might be false positives.",
+                  "",
+                  "Once you are confident that you have fixed **all** the detected issues and this PR is ready to be merged, add a comment with exactly one word: `ready`.",
+                ].join("\n")
               );
+              
             }
 
-            // 5) Add instructor reviewer
-            await requestInstructorReviewer();
-
-            // 6) Move linked issues to "in review"
-            const project = await getSingleRepoProjectV2();
-            const status = await getStatusFieldConfig(project.id);
-            const inReviewId = findSingleOptionId(status.options, "in review");
-
-            for (const iss of issues) {
-              let itemId = await getProjectItemIdForIssue(iss.id, project.id);
-              if (!itemId) itemId = await addIssueToProject(project.id, iss.id);
-              await setStatus(project.id, itemId, status.fieldId, inReviewId);
-            }
-
-            // 7) Remove missing-linked-issue label if present
+            // 6) Remove missing-linked-issue label if present
             await removePrLabelSafe("pr-missing-linked-issue");

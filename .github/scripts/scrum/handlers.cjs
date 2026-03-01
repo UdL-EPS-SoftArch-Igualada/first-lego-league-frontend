@@ -162,7 +162,7 @@ async function handleIssueEdited({ github, context, core }) {
 
 	// 3) Remove old story points labels + invalid label
 	for (const l of (issue.labels || []).map((x) => x.name)) {
-		if (ALL_STORY_POINTS_LABELS.includes(l)) {
+		if (ALL_STORY_POINTS_LABELS.includes(l) && l !== spLabel) {
 			await removeLabelSafe(github, context, l);
 		}
 	}
@@ -391,10 +391,109 @@ async function handleIssueClosed({ github, context, core }) {
 	}
 }
 
+/**
+ * PR comment created: handle "ready"
+ */
+async function handlePullRequestCommentCreated({ github, context, core }) {
+	const comment = context.payload.comment;
+	const issue = context.payload.issue;
+
+	const commenter = comment.user?.login || "";
+	if (commenter.toLowerCase().endsWith("[bot]")) return;
+
+	const bodyTrim = (comment.body || "").trim();
+	if (bodyTrim.toLowerCase() !== "ready") return;
+
+	const owner = context.repo.owner;
+	const repo = context.repo.repo;
+	const prNumber = issue.number;
+
+	// Get PR details
+	const { data: pr } = await github.rest.pulls.get({
+		owner,
+		repo,
+		pull_number: prNumber,
+	});
+
+	// Check if PR has pr-not-ready label
+	const labels = pr.labels.map(l => l.name);
+	if (!labels.includes("pr-not-ready")) return;
+
+	// Get closing issues
+	const q = `
+		query($owner:String!, $repo:String!, $prNumber:Int!) {
+			repository(owner:$owner, name:$repo) {
+				pullRequest(number:$prNumber) {
+					id
+					closingIssuesReferences(first: 10) {
+						nodes {
+							id
+							number
+							assignees(first: 50) { nodes { login } }
+						}
+					}
+				}
+			}
+		}
+	`;
+	const res = await github.graphql(q, { owner, repo, prNumber });
+	const issues = res.repository.pullRequest.closingIssuesReferences.nodes || [];
+
+	// Check if commenter is assigned to all linked issues
+	const commenterLower = commenter.toLowerCase();
+	const notAssignedTo = issues.filter(iss => {
+		const assignees = (iss.assignees.nodes || []).map(a => (a.login || "").toLowerCase());
+		return !assignees.includes(commenterLower);
+	});
+
+	if (notAssignedTo.length > 0) {
+		await addComment(github, context, [
+			`Hi @${commenter}, you cannot mark this PR as ready because you are not assigned to its linked issues.`,
+			"",
+			"Not assigned to: " + notAssignedTo.map(i => `#${i.number}`).join(", "),
+			`If you think this is a mistake, please ping ${pingInstructor()}.`,
+		].join("\n"));
+		return;
+	}
+
+	const instructor = instructorLogin();
+
+	// Remove pr-not-ready label
+	await removeLabelSafe(github, context, "pr-not-ready");
+
+	// Request instructor reviewer
+	if (instructor) {
+		try {
+			await github.rest.pulls.requestReviewers({
+				owner,
+				repo,
+				pull_number: prNumber,
+				reviewers: [instructor],
+			});
+		} catch (e) {
+			core.warning(`Failed to request review from instructor: ${e.message}`);
+		}
+	}
+
+	// Move linked issues to "in review"
+	const project = await getSingleRepoProjectV2(github, context);
+	const status = await getStatusFieldConfig(github, project.id);
+	const inReviewId = findSingleStatusOptionId(status.options, "in review");
+
+	for (const iss of issues) {
+		let itemId = await getProjectItemIdForIssue(github, iss.id, project.id);
+		if (!itemId) itemId = await addIssueToProject(github, project.id, iss.id);
+		await setProjectItemSingleSelect(github, project.id, itemId, status.fieldId, inReviewId);
+	}
+
+	await addComment(github, context, "This PR is now marked as **ready to be merged**.");
+}
+
 module.exports = {
 	handleIssueOpened,
 	handleIssueEdited,
 	handleInboxUnlabeled,
 	handleIssueCommentCreated,
+	handlePullRequestCommentCreated,
 	handleIssueClosed,
 };

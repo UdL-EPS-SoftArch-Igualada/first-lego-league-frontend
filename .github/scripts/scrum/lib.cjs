@@ -3,7 +3,7 @@ const path = require("node:path");
 
 const TEAMS_FILE = path.join(process.cwd(), ".github", "teams.txt");
 
-const IN_PROGRESS_TASKS_LIMIT = 3
+const IN_PROGRESS_TASKS_LIMIT = 2
 
 const STORY_POINTS_RE =
 	/time estimation:?\r?\n+(0\.25|0\.5|1|2|3|4) story points?/;

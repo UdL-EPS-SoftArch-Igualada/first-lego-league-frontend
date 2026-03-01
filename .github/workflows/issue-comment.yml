@@ -1,4 +1,4 @@
-name: Issue comment - claim task and move to in progress
+name: Issue comment - claim task and move to in progress, PR ready
 on:
   issue_comment:
     types: [created]
@@ -6,6 +6,7 @@ on:
 permissions:
   contents: read
   issues: write
+  pull-requests: write
 
 env:
   INSTRUCTOR_GITHUB_USERNAME: ${{ vars.INSTRUCTOR_GITHUB_USERNAME }}
@@ -28,10 +29,15 @@ jobs:
           app-id: ${{ vars.PROJECTS_APP_ID }}
           private-key: ${{ secrets.PROJECTS_APP_PRIVATE_KEY }}
 
-      - name: Handle request comment
+      - name: Handle request and ready comments
         uses: actions/github-script@v8
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
-            const { handleIssueCommentCreated } = require('./.github/scripts/scrum/handlers.cjs');
-            await handleIssueCommentCreated({ github, context, core });
+            const { handleIssueCommentCreated, handlePullRequestCommentCreated } = require('./.github/scripts/scrum/handlers.cjs');
+            
+            if (context.payload.issue.pull_request) {
+              await handlePullRequestCommentCreated({ github, context, core });
+            } else {
+              await handleIssueCommentCreated({ github, context, core });
+            }
