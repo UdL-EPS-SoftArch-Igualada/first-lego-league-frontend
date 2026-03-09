@@ -1,6 +1,11 @@
+"use client";
+
+import { useAuth } from "@/app/components/authentication";
 import Link from "next/link";
 
 export default function Home() {
+  const { user } = useAuth();
+
   const coreModules = [
     {
       href: "/teams",
@@ -26,30 +31,38 @@ export default function Home() {
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
             First Lego League Frontend
           </h1>
-          <p className="mt-3 max-w-2xl text-zinc-600 dark:text-zinc-300">
-            This is the navigation hub for the core competition entities.
-            Use the modules below to start building list, detail, and create flows.
-          </p>
+          {user ? (
+            <p className="mt-3 max-w-2xl text-zinc-600 dark:text-zinc-300">
+              This is the navigation hub for the core competition entities.
+              Use the modules below to start building list, detail, and create flows.
+            </p>
+          ) : (
+            <p className="mt-3 max-w-2xl text-zinc-600 dark:text-zinc-300">
+              Please log in to access the core modules from this landing page.
+            </p>
+          )}
 
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {coreModules.map((module) => (
-              <Link
-                key={module.href}
-                href={module.href}
-                className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 transition hover:border-blue-400 hover:bg-blue-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-blue-500 dark:hover:bg-zinc-800"
-              >
-                <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                  {module.title}
-                </h2>
-                <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
-                  {module.description}
-                </p>
-                <span className="mt-4 inline-block text-sm font-medium text-blue-600 dark:text-blue-400">
-                  Open module
-                </span>
-              </Link>
-            ))}
-          </div>
+          {user && (
+            <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {coreModules.map((module) => (
+                <Link
+                  key={module.href}
+                  href={module.href}
+                  className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 transition hover:border-blue-400 hover:bg-blue-50 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-blue-500 dark:hover:bg-zinc-800"
+                >
+                  <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                    {module.title}
+                  </h2>
+                  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                    {module.description}
+                  </p>
+                  <span className="mt-4 inline-block text-sm font-medium text-blue-600 dark:text-blue-400">
+                    Open module
+                  </span>
+                </Link>
+              ))}
+            </div>
+          )}
         </section>
       </main>
     </div>

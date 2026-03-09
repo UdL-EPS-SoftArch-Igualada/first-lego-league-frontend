@@ -10,10 +10,11 @@ export default function ScientificProjectsPage() {
                         Module under construction.
                     </p>
                     <button
+                        type="button"
                         disabled
                         className="mt-6 inline-flex cursor-not-allowed rounded-lg bg-zinc-400 px-4 py-2 text-sm font-medium text-white dark:bg-zinc-600"
                     >
-                        Create Scientific Project (coming soon)
+                        Scientific project list coming soon
                     </button>
                 </section>
             </main>

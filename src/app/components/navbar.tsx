@@ -13,14 +13,14 @@ export default function Navbar() {
     const navLinks = [
         { href: "/", label: "Home" },
         { href: "/users", label: "Users", roles: ["ROLE_USER"] },
-        { href: "/teams", label: "Teams", roles: ["ROLE_USER"] },
-        { href: "/editions", label: "Editions", roles: ["ROLE_USER"] },
-        { href: "/scientific-projects", label: "Scientific Projects", roles: ["ROLE_USER"] }
+        { href: "/teams", label: "Teams" },
+        { href: "/editions", label: "Editions" },
+        { href: "/scientific-projects", label: "Scientific Projects" }
     ];
 
     return (
-        <nav className="bg-white border-b shadow-sm dark:bg-black">
-            <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-6">
+        <nav className="border-b bg-white shadow-sm dark:bg-black">
+            <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-4 sm:px-6">
                 <div className="flex gap-2 font-bold w-auto">
                     <Image
                         className="dark:invert"
@@ -32,21 +32,23 @@ export default function Navbar() {
                     /> Template
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex flex-1 flex-wrap items-center gap-2">
                     {navLinks
                         .filter(({ roles }) =>
                             !roles || user?.authorities?.some(
                                 userAuth => roles.includes(userAuth.authority)))
                         .map(({ href, label }) => {
-                            const active = pathname === href;
+                            const active = href === "/"
+                                ? pathname === "/"
+                                : pathname === href || pathname.startsWith(`${href}/`);
                             return (
                                 <Link
                                     key={href}
                                     href={href}
                                     className={
                                         active
-                                            ? "text-blue-600 font-medium border-b-2 border-blue-600 pb-1"
-                                            : "text-gray-600 hover:text-gray-900 transition"
+                                            ? "rounded-md border border-blue-600 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 transition dark:bg-blue-950 dark:text-blue-300"
+                                            : "rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-900"
                                     }
                                 >
                                     {label}

@@ -11,6 +11,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 Role visibility note:
 
 - `Users`, `Teams`, `Editions`, and `Scientific Projects` links in the navbar are visible only to users with `ROLE_USER`.
+- Frontend route is `/scientific-projects`, while backend resource uses `/scientificProjects`.
 
 ## Getting Started
 

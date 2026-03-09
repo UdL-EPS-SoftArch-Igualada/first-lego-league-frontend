@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 export default function TeamsPage() {
     return (
         <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
@@ -11,12 +9,13 @@ export default function TeamsPage() {
                     <p className="mt-3 text-zinc-600 dark:text-zinc-300">
                         Module under construction.
                     </p>
-                    <Link
-                        href="/teams/create"
-                        className="mt-6 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                    <button
+                        type="button"
+                        disabled
+                        className="mt-6 inline-flex cursor-not-allowed rounded-lg bg-zinc-400 px-4 py-2 text-sm font-medium text-white dark:bg-zinc-600"
                     >
-                        Create Team (coming soon)
-                    </Link>
+                        Team list coming soon
+                    </button>
                 </section>
             </main>
         </div>
