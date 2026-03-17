@@ -1,22 +1,55 @@
-export default function EditionsPage() {
+import { EditionsService } from "@/api/editionApi";
+import { serverAuthProvider } from "@/lib/authProvider";
+import { Edition } from "@/types/edition";
+
+export default async function EditionsPage() {
+    let editions: Edition[] = [];
+    let error: string | null = null;
+
+    try {
+        const service = new EditionsService(serverAuthProvider);
+        editions = await service.getEditions();
+    } catch (e) {
+        console.error("Failed to fetch editions:", e);
+        error = "Failed to load editions.";
+    }
+
     return (
         <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-            <main className="w-full max-w-3xl p-8 sm:p-12">
-                <section className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-                    <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
-                        Editions
-                    </h1>
-                    <p className="mt-3 text-zinc-600 dark:text-zinc-300">
-                        Module under construction.
-                    </p>
-                    <button
-                        type="button"
-                        disabled
-                        className="mt-6 inline-flex cursor-not-allowed rounded-lg bg-zinc-400 px-4 py-2 text-sm font-medium text-white dark:bg-zinc-600"
-                    >
-                        Edition list coming soon
-                    </button>
-                </section>
+            <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
+                <div className="flex flex-col items-center w-full gap-6 text-center sm:items-start sm:text-left">
+                    <h1 className="text-2xl font-semibold mb-6">Editions</h1>
+
+                    {error && (
+                        <p className="text-red-600">{error}</p>
+                    )}
+
+                    {!error && editions.length === 0 && (
+                        <p className="text-zinc-500">No editions found.</p>
+                    )}
+
+                    <ul className="space-y-3 w-full">
+                        {editions.map((edition, index) => (
+                            <li
+                                key={edition.uri ?? index}
+                                className="p-4 w-full border rounded-lg bg-white shadow-sm hover:shadow transition dark:bg-black"
+                            >
+                                <span className="font-medium">{edition.year}</span>
+                                {edition.venueName && (
+                                    <div className="text-gray-600 text-sm">{edition.venueName}</div>
+                                )}
+                                {edition.description && (
+                                    <div className="text-gray-500 text-sm mt-1">{edition.description}</div>
+                                )}
+                                {edition.state && (
+                                    <div className="text-xs mt-2 inline-block rounded px-2 py-0.5 bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                                        {edition.state}
+                                    </div>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
             </main>
         </div>
     );
