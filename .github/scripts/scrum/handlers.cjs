@@ -282,7 +282,7 @@ async function handleIssueCommentCreated({ github, context, core }) {
 			context,
 			[
 				`Hi @${requester}, you cannot self-assign this issue because your team already has **${inProgressCount} tasks** in progress.`,
-				"Each team can have at most 3 tasks in progress at any given time.",
+				`Each team can have at most ${IN_PROGRESS_TASKS_LIMIT} tasks in progress at any given time.`,
 			].join("\n")
 		);
 		return;
