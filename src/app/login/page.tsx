@@ -30,7 +30,7 @@ export default function LoginPage() {
         const authorization = `Basic ${base64}`;
         setCookie(AUTH_COOKIE_NAME, authorization, {
             path: "/",
-            secure: typeof window !== 'undefined' && window.location.protocol === 'https:',
+            secure: process.env.NODE_ENV === 'production',
             sameSite: "strict",
             httpOnly: false,
         });
