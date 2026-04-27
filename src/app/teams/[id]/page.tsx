@@ -9,6 +9,7 @@ import { ScientificProjectCardLink } from "@/app/components/scientific-project-c
 import { TeamMembersManager } from "@/app/components/team-member-manager";
 import TeamEditSection from "@/app/components/team-edit-section";
 import { serverAuthProvider } from "@/lib/authProvider";
+import { getAwardLabel, getAwardWinnerTeamUri, getResourceUri, getTeamEditionUri, normalizeUri } from "@/lib/awardUtils";
 import { isAdmin } from "@/lib/authz";
 import { Award } from "@/types/award";
 import { Edition } from "@/types/edition";
@@ -37,69 +38,6 @@ function toTeamMemberSnapshot(member: TeamMember): TeamMemberSnapshot {
 function getTeamDisplayName(team: Team | null): string | null {
     if (!team) return null;
     return team.name ?? team.id ?? null;
-}
-
-function getResourceUri(resource: { uri?: string; link: (relation: string) => { href?: string } | undefined } | null | undefined): string | null {
-    return resource?.uri ?? resource?.link("self")?.href ?? null;
-}
-
-function getTeamEditionUri(team: Team): string | null {
-    const editionLink = team.link("edition")?.href;
-    if (editionLink) {
-        return editionLink;
-    }
-
-    const edition = Reflect.get(team, "edition");
-    if (typeof edition === "string" && edition.trim()) {
-        return edition;
-    }
-
-    if (edition && typeof edition === "object") {
-        return getResourceUri(edition as { uri?: string; link: (relation: string) => { href?: string } | undefined });
-    }
-
-    return null;
-}
-
-function normalizeUri(resourceUri: string | null | undefined): string | null {
-    if (!resourceUri) {
-        return null;
-    }
-
-    const sanitizedUri = resourceUri.split(/[?#]/, 1)[0] ?? null;
-
-    if (!sanitizedUri) {
-        return null;
-    }
-
-    return sanitizedUri.replace(/^https?:\/\/[^/]+/i, "");
-}
-
-function getAwardWinnerTeamUri(award: Award): string | null {
-    const winnerTeamFromLink = award.link("winnerTeam")?.href;
-    if (winnerTeamFromLink) {
-        return winnerTeamFromLink;
-    }
-
-    if (typeof award.winnerTeam === "string" && award.winnerTeam.length > 0) {
-        return award.winnerTeam;
-    }
-
-    const winnerFromLink = award.link("winner")?.href;
-    if (winnerFromLink) {
-        return winnerFromLink;
-    }
-
-    const winner = Reflect.get(award, "winner");
-    if (typeof winner === "string" && winner.length > 0) {
-        return winner;
-    }
-
-    return null;
-}
-
-function getAwardLabel(award: Award, fallbackIndex: number): string {
-    return award.name ?? award.title ?? award.category ?? `Award ${fallbackIndex + 1}`;
 }
 
 const awardBadgeClassName =

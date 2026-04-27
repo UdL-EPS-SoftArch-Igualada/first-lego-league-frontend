@@ -7,6 +7,7 @@ import { UsersService } from "@/api/userApi";
 import { serverAuthProvider } from "@/lib/authProvider";
 import { isAdmin } from "@/lib/authz";
 import { getEncodedResourceId } from "@/lib/halRoute";
+import { getResourceUri, getTeamEditionUri, normalizeUri } from "@/lib/awardUtils";
 import { ApiError, AuthenticationError, ValidationError } from "@/types/errors";
 import type { Award } from "@/types/award";
 import type { Team } from "@/types/team";
@@ -18,36 +19,6 @@ type CreateAwardInput = Readonly<{
     title: string;
     category: string;
 }>;
-
-function getResourceUri(resource: { uri?: string; link?: (relation: string) => { href?: string } | undefined } | null | undefined): string | null {
-    return resource?.uri ?? resource?.link?.("self")?.href ?? null;
-}
-
-function getTeamEditionUri(team: Team): string | null {
-    const editionLink = team.link("edition")?.href;
-    if (editionLink) {
-        return editionLink;
-    }
-
-    const edition = Reflect.get(team, "edition");
-    if (typeof edition === "string" && edition.trim()) {
-        return edition;
-    }
-
-    if (edition && typeof edition === "object") {
-        return getResourceUri(edition as { uri?: string; link?: (relation: string) => { href?: string } | undefined });
-    }
-
-    return null;
-}
-
-function normalizeUri(resourceUri: string | null | undefined): string | null {
-    if (!resourceUri) {
-        return null;
-    }
-
-    return resourceUri.split(/[?#]/, 1)[0]?.replace(/^https?:\/\/[^/]+/i, "") ?? null;
-}
 
 function getResourceId(resourceUri: string): string | null {
     return getEncodedResourceId(resourceUri);
