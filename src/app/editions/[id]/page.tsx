@@ -7,6 +7,7 @@ import EmptyState from "@/app/components/empty-state";
 import LeaderboardTable from "@/app/components/leaderboard-table";
 import { MediaItem } from "@/app/components/media-gallery";
 import { MediaSection } from "@/app/components/media-section";
+import AwardDeleteSection from "./award-delete-section";
 import { serverAuthProvider } from "@/lib/authProvider";
 import type { LeaderboardItem } from "@/types/leaderboard";
 import { getEncodedResourceId } from "@/lib/halRoute";
@@ -40,6 +41,10 @@ function getEditionTitle(edition: Edition | null, id: string) {
 
 function getAwardLabel(award: Award, fallbackIndex: number): string {
     return award.name ?? award.title ?? award.category ?? `Award ${fallbackIndex + 1}`;
+}
+
+function getAwardResourceUri(award: Award): string | null {
+    return award.link("self")?.href ?? award.uri ?? null;
 }
 
 function getAwardWinnerTeamUri(award: Award): string | null {
@@ -254,14 +259,26 @@ export default async function EditionDetailPage(props: Readonly<EditionDetailPag
                                                         </span>
                                                     )}
 
-                                                    {teamAwards.map((award, awardIndex) => (
-                                                        <span
-                                                            key={award.uri ?? `${team.uri ?? index}-${awardIndex}`}
-                                                            className="inline-flex items-center rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-900"
-                                                        >
-                                                            {getAwardLabel(award, awardIndex)}
-                                                        </span>
-                                                    ))}
+                                                    {teamAwards.map((award, awardIndex) => {
+                                                        const awardLabel = getAwardLabel(award, awardIndex);
+                                                        const awardUri = getAwardResourceUri(award);
+
+                                                        return (
+                                                            <span
+                                                                key={award.uri ?? `${team.uri ?? index}-${awardIndex}`}
+                                                                className="inline-flex items-center rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-900"
+                                                            >
+                                                                {awardLabel}
+                                                                {currentUser && isAdmin(currentUser) && awardUri && (
+                                                                    <AwardDeleteSection
+                                                                        editionId={id}
+                                                                        awardLabel={awardLabel}
+                                                                        awardUri={awardUri}
+                                                                    />
+                                                                )}
+                                                            </span>
+                                                        );
+                                                    })}
                                                 </div>
                                             </li>
                                         );

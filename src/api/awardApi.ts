@@ -1,7 +1,7 @@
 import type { AuthStrategy } from "@/lib/authProvider";
 import { Award } from "@/types/award";
 import { Team } from "@/types/team";
-import { fetchHalCollection, fetchHalResource } from "./halClient";
+import { deleteHal, fetchHalCollection, fetchHalResource } from "./halClient";
 
 function getResourceUri(resource: Team & { link: (relation: string) => { href?: string } | undefined }): string | null {
     return resource.uri ?? resource.link("self")?.href ?? null;
@@ -35,5 +35,9 @@ export class AwardsService {
                 winnerTeam: winnerTeamUri,
             });
         }));
+    }
+
+    async deleteAward(awardUri: string): Promise<void> {
+        await deleteHal(awardUri, this.authStrategy);
     }
 }
