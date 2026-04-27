@@ -50,6 +50,10 @@ export const TEAM_MEMBER_GENDER_OPTIONS = [
 
 export type TeamMemberGender = (typeof TEAM_MEMBER_GENDER_OPTIONS)[number];
 
+export const TSHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'] as const;
+
+export type TShirtSize = (typeof TSHIRT_SIZES)[number];
+
 export interface CreateTeamPayload {
     name: string;
     city: string;
@@ -63,6 +67,7 @@ export interface CreateTeamMemberPayload {
     name: string;
     birthDate: string;
     gender: TeamMemberGender;
+    tShirtSize: string;
     role: string;
     team: string;
 }

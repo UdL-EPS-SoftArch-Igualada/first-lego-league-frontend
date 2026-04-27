@@ -5,6 +5,7 @@ import ErrorAlert from "@/app/components/error-alert";
 import PageShell from "@/app/components/page-shell";
 import { serverAuthProvider } from "@/lib/authProvider";
 import { isAdmin } from "@/lib/authz";
+import { getTeamDisplayName } from "@/lib/teamUtils";
 import { CompetitionTable } from "@/types/competitionTable";
 import { AuthenticationError, parseErrorMessage } from "@/types/errors";
 import { Referee } from "@/types/referee";
@@ -75,7 +76,7 @@ function getTeamOption(team: Team): Option | null {
     }
 
     return {
-        label: team.name ?? team.id ?? getUriLabel(resourceUri, "Team"),
+        label: getTeamDisplayName(team),
         value: resourceUri,
     };
 }

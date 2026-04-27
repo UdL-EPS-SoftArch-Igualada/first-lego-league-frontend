@@ -1,5 +1,4 @@
 import type { AuthStrategy } from "@/lib/authProvider";
-import type { HalPage } from "@/types/pagination";
 import {
     ApiError,
     AuthenticationError,
@@ -9,6 +8,7 @@ import {
     ServerError,
     ValidationError,
 } from "@/types/errors";
+import type { HalPage } from "@/types/pagination";
 import {
     CreateCoachPayload,
     CreateTeamMemberPayload,
@@ -20,11 +20,11 @@ import {
 } from "@/types/team";
 import {
     API_BASE_URL,
+    createHalResource,
+    deleteHal,
     fetchHalCollection,
     fetchHalPagedCollection,
     fetchHalResource,
-    createHalResource,
-    deleteHal,
 } from "./halClient";
 
 function getSafeEncodedId(id: string): string {
@@ -40,6 +40,7 @@ export interface AddMemberPayload {
     role: string;
     birthDate: string;
     gender: TeamMemberGender;
+    tShirtSize: string;
 }
 
 export class TeamsService {
@@ -99,6 +100,7 @@ export class TeamsService {
                 name: data.name.trim(),
                 birthDate: data.birthDate,
                 gender: data.gender,
+                tShirtSize: data.tShirtSize,
                 role: data.role.trim(),
                 team: data.team,
             },
@@ -114,6 +116,7 @@ export class TeamsService {
             role: data.role,
             birthDate: data.birthDate,
             gender: data.gender,
+            tShirtSize: data.tShirtSize,
             team: `/teams/${safeId}`,
         });
     }

@@ -2,25 +2,26 @@ import { AwardsService } from "@/api/awardApi";
 import { EditionsService } from "@/api/editionApi";
 import { LeaderboardService } from "@/api/leaderboardApi";
 import { MediaService } from "@/api/mediaApi";
+import { UsersService } from "@/api/userApi";
+import { buttonVariants } from "@/app/components/button";
 import ErrorAlert from "@/app/components/error-alert";
 import EmptyState from "@/app/components/empty-state";
 import LeaderboardTable from "@/app/components/leaderboard-table";
 import { MediaItem } from "@/app/components/media-gallery";
 import { MediaSection } from "@/app/components/media-section";
 import { serverAuthProvider } from "@/lib/authProvider";
-import type { LeaderboardItem } from "@/types/leaderboard";
+import { isAdmin } from "@/lib/authz";
 import { getEncodedResourceId } from "@/lib/halRoute";
 import { Award } from "@/types/award";
 import { Edition } from "@/types/edition";
+import type { LeaderboardItem } from "@/types/leaderboard";
 import { MediaContent } from "@/types/mediaContent";
 import { Team } from "@/types/team";
+import { User } from "@/types/user";
 import { parseErrorMessage, NotFoundError } from "@/types/errors";
 import Link from "next/link";
-import { buttonVariants } from "@/app/components/button";
-import { isAdmin } from "@/lib/authz";
+import { getTeamDisplayName } from "@/lib/teamUtils";
 import AddMediaForm from "./_add-media-form";
-import { User } from "@/types/user";
-import { UsersService } from "@/api/userApi";
 
 interface EditionDetailPageProps {
     readonly params: Promise<{ id: string }>;
@@ -244,26 +245,15 @@ export default async function EditionDetailPage(props: Readonly<EditionDetailPag
                                                 key={team.uri ?? index}
                                                 className="w-full rounded-lg border border-border bg-card p-4 shadow-sm transition hover:bg-secondary/30"
                                             >
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    {href ? (
-                                                        <Link href={href} className="font-medium text-foreground">
-                                                            {team.name ?? team.id ?? `Team ${index + 1}`}
-                                                        </Link>
-                                                    ) : (
-                                                        <span className="font-medium text-foreground">
-                                                            {team.name ?? team.id ?? `Team ${index + 1}`}
-                                                        </span>
-                                                    )}
-
-                                                    {teamAwards.map((award, awardIndex) => (
-                                                        <span
-                                                            key={award.uri ?? `${team.uri ?? index}-${awardIndex}`}
-                                                            className="inline-flex items-center rounded-full border border-amber-300 bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-900"
-                                                        >
-                                                            {getAwardLabel(award, awardIndex)}
-                                                        </span>
-                                                    ))}
-                                                </div>
+                                                {href ? (
+                                                    <Link href={href} className="font-medium text-foreground">
+                                                        {getTeamDisplayName(team)}
+                                                    </Link>
+                                                ) : (
+                                                    <span className="font-medium text-foreground">
+                                                        {getTeamDisplayName(team)}
+                                                    </span>
+                                                )}
                                             </li>
                                         );
                                     })}

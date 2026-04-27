@@ -33,6 +33,7 @@ function createEmptyMember() {
         name: "",
         age: "",
         gender: "",
+        tShirtSize: "",
     };
 }
 

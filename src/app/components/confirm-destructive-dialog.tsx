@@ -3,7 +3,6 @@
 import { ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/app/components/button";
 import ErrorAlert from "@/app/components/error-alert";
-import { parseErrorMessage } from "@/types/errors";
 
 interface ConfirmDestructiveDialogProps {
   readonly title: string;
@@ -24,6 +23,7 @@ export default function ConfirmDestructiveDialog({
 }: ConfirmDestructiveDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -31,7 +31,6 @@ export default function ConfirmDestructiveDialog({
     const dialog = dialogRef.current;
     if (!dialog) return;
 
-    // Native dialogs give us focus trapping and Escape/backdrop behavior for free.
     dialog.showModal();
 
     return () => {
@@ -39,29 +38,30 @@ export default function ConfirmDestructiveDialog({
     };
   }, []);
 
-  useEffect(() => {
+  function closeDialog() {
     const dialog = dialogRef.current;
-    if (!dialog) return;
+    if (dialog?.open) dialog.close();
+  }
 
-    function handleCancel(event: Event) {
-      // Block dismissal while the destructive request is still running.
-      event.preventDefault();
-      if (!isPending) onCancel();
-    }
-
-    dialog.addEventListener("cancel", handleCancel);
-    return () => dialog.removeEventListener("cancel", handleCancel);
-  }, [isPending, onCancel]);
+  function handleCancel() {
+    if (isPending) return;
+    closeDialog();
+    onCancel();
+  }
 
   async function handleConfirm() {
     setIsPending(true);
     setErrorMessage(null);
 
     try {
-      // Callers only provide the mutation; this wrapper owns shared modal UX.
       await onConfirm();
+      closeDialog();
     } catch (error) {
-      setErrorMessage(parseErrorMessage(error));
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "An unexpected error occurred"
+      );
       setIsPending(false);
     }
   }
@@ -75,12 +75,12 @@ export default function ConfirmDestructiveDialog({
     >
       <h2
         id={titleId}
-        className="text-lg font-semibold tracking-[-0.03em] text-foreground"
+        className="text-lg font-semibold text-foreground"
       >
         {title}
       </h2>
 
-      <div className="mt-3 text-sm leading-6 text-muted-foreground">
+      <div className="mt-3 text-sm text-muted-foreground">
         {description}
       </div>
 
@@ -92,11 +92,10 @@ export default function ConfirmDestructiveDialog({
 
       <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         <Button
-          autoFocus
           type="button"
           variant="outline"
           disabled={isPending}
-          onClick={onCancel}
+          onClick={handleCancel}
         >
           Cancel
         </Button>

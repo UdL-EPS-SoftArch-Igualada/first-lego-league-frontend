@@ -7,6 +7,7 @@ import ErrorAlert from "@/app/components/error-alert";
 import PageShell from "@/app/components/page-shell";
 import { serverAuthProvider } from "@/lib/authProvider";
 import { isAdmin, isReferee } from "@/lib/authz";
+import { getTeamDisplayName } from "@/lib/teamUtils";
 import { getEncodedResourceId } from "@/lib/halRoute";
 import { formatMatchTime } from "@/lib/matchUtils";
 import { Edition } from "@/types/edition";
@@ -106,7 +107,7 @@ function TeamCard({ team, label, yearQuery }: Readonly<{ team: Team; label: stri
             className={`module-card flex flex-col gap-2 rounded-lg border border-border bg-card p-5 transition-colors${teamId ? " hover:bg-secondary/30" : ""}`}
         >
             <div className="page-eyebrow">{label}</div>
-            <p className="list-title">{team.name ?? team.id ?? "Unnamed team"}</p>
+            <p className="list-title">{getTeamDisplayName(team)}</p>
             <div className="space-y-1">
                 {team.city && <p className="list-support">{team.city}</p>}
                 {team.category && (

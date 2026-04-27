@@ -1,8 +1,8 @@
 'use client';
-import { useState, useCallback, useMemo } from 'react';
 import { TeamsService } from '@/api/teamApi';
 import { clientAuthProvider } from '@/lib/authProvider';
 import { MAX_TEAM_MEMBERS, TeamMember, TeamMemberGender, TeamMemberSnapshot } from '@/types/team';
+import { useCallback, useMemo, useState } from 'react';
 
 function hasHalSelfLink(member: TeamMember | TeamMemberSnapshot): member is TeamMember {
     return "link" in member && typeof member.link === "function";
@@ -37,7 +37,7 @@ export function useTeamMembers(teamId: string, initialMembers: TeamMemberSnapsho
     );
 
     const addMember = useCallback(
-        async (name: string, role: string, birthDate: string, gender: TeamMemberGender) => {
+        async (name: string, role: string, birthDate: string, gender: TeamMemberGender, tShirtSize: string) => {
             if (!teamId) {
                 setError('Missing teamId');
                 return false;
@@ -54,6 +54,7 @@ export function useTeamMembers(teamId: string, initialMembers: TeamMemberSnapsho
                     role,
                     birthDate,
                     gender,
+                    tShirtSize
                 });
                 setMembers(prev => [...prev, toTeamMemberSnapshot(newMember)]);
                 return true;

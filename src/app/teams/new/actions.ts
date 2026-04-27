@@ -15,10 +15,10 @@ import {
     DEFAULT_TEAM_MEMBER_ROLE,
     MAX_TEAM_MEMBERS,
     TEAM_CATEGORY_OPTIONS,
+    TEAM_MEMBER_GENDER_OPTIONS,
     Team,
     TeamCategory,
     TeamCoach,
-    TEAM_MEMBER_GENDER_OPTIONS,
     TeamMemberGender,
 } from "@/types/team";
 import { revalidatePath } from "next/cache";
@@ -27,6 +27,7 @@ type TeamMemberInput = {
     name: string;
     age: string;
     gender: string;
+    tShirtSize: string;
 };
 
 type CoachInput = {
@@ -50,6 +51,7 @@ type NormalizedTeamMemberInput = {
     name: string;
     age: number;
     gender: TeamMemberGender;
+    tShirtSize: string;
 };
 
 type NormalizedCoachInput = {
@@ -268,6 +270,10 @@ function validateTeamPayload(data: CreateTeamFormPayload): ValidatedTeamPayload 
             `Member ${index + 1} name is required.`
         );
         const age = parseInteger(member.age, `Member ${index + 1} age must be a valid number.`);
+        const tShirtSize = normalizeRequiredString(
+            member.tShirtSize,
+            `Member ${index + 1} t-shirt size is required.`
+        );
 
         if (age < 1 || age > 99) {
             throw new ValidationError(`Member ${index + 1} age must be between 1 and 99.`);
@@ -286,6 +292,7 @@ function validateTeamPayload(data: CreateTeamFormPayload): ValidatedTeamPayload 
             name: nameValue,
             age,
             gender: normalizedGender as TeamMemberGender,
+            tShirtSize,
         };
     });
 
@@ -392,6 +399,7 @@ export async function createTeam(data: CreateTeamFormPayload) {
                 gender: member.gender,
                 role: DEFAULT_TEAM_MEMBER_ROLE,
                 team: teamReference,
+                tShirtSize: member.tShirtSize,
             });
         }
 

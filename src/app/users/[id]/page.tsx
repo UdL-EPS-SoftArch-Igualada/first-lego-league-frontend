@@ -20,11 +20,12 @@ function getRecordHref(recordUri: string) {
     const sanitizedUri = recordUri.split(/[?#]/, 1)[0] ?? "";
     const segments = sanitizedUri.split("/").filter(Boolean);
     const recordId = segments.at(-1);
-
     return recordId ? `/records/${recordId}` : recordUri;
 }
 
 export default async function UsersPage(props: Readonly<UsersPageProps>) {
+    const { id } = await props.params;
+
     const userService = new UsersService(serverAuthProvider);
     const recordService = new RecordService(serverAuthProvider);
 
@@ -35,12 +36,13 @@ export default async function UsersPage(props: Readonly<UsersPageProps>) {
     let recordsError: string | null = null;
 
     try {
-        user = await userService.getUserById((await props.params).id);
+        user = await userService.getUserById(id);
     } catch (e) {
         console.error("Failed to fetch user:", e);
-        error = e instanceof NotFoundError
-            ? "This user does not exist."
-            : parseErrorMessage(e);
+        error =
+            e instanceof NotFoundError
+                ? "This user does not exist."
+                : parseErrorMessage(e);
     }
 
     try {
@@ -49,11 +51,13 @@ export default async function UsersPage(props: Readonly<UsersPageProps>) {
         console.error("Failed to fetch current user:", e);
     }
 
-    const isOwner = !!(currentUser && user && currentUser.username === user.username);
+    const isOwner =
+        !!(currentUser && user && currentUser.username === user.username);
 
-    const isCurrentUserAdmin = !!currentUser?.authorities?.some(
-    (authority) => authority.authority === "ROLE_ADMIN"
-);
+    const isCurrentUserAdmin =
+        !!currentUser?.authorities?.some(
+            (authority) => authority.authority === "ROLE_ADMIN"
+        );
 
     if (user && !error) {
         try {
@@ -86,6 +90,7 @@ export default async function UsersPage(props: Readonly<UsersPageProps>) {
                 <div className="space-y-3">
                     <div className="page-eyebrow">User details</div>
                     <h2 className="section-title">{user?.username}</h2>
+
                     {user?.email && (
                         <p className="section-copy">
                             <strong>Email:</strong> {user.email}
@@ -98,21 +103,23 @@ export default async function UsersPage(props: Readonly<UsersPageProps>) {
                 {isOwner && user && (
                     <>
                         <EditProfileForm
-                            userId={(await props.params).id}
+                            userId={id}
                             currentEmail={user.email}
                         />
 
-                        { isCurrentUserAdmin && (
+                        {isCurrentUserAdmin && (
                             <div className="mt-4">
                                 <Link
                                     href="/administrators"
-                                    className={buttonVariants({ variant: "secondary" })}
-
-                                    >
+                                    className={buttonVariants({
+                                        variant: "secondary",
+                                    })}
+                                >
                                     view and create other administrators
-                                    </Link>
+                                </Link>
                             </div>
                         )}
+
                         <div className="editorial-divider" />
                     </>
                 )}
@@ -133,12 +140,19 @@ export default async function UsersPage(props: Readonly<UsersPageProps>) {
                     {!recordsError && records.length > 0 && (
                         <div className="grid gap-4">
                             {records.map((record) => (
-                                <Card key={record.uri} className="border-border/90">
+                                <Card
+                                    key={record.uri}
+                                    className="border-border/90"
+                                >
                                     <CardHeader>
-                                        <div className="list-kicker">Record</div>
+                                        <div className="list-kicker">
+                                            Record
+                                        </div>
                                         <CardTitle className="text-xl">
                                             <Link
-                                                href={getRecordHref(record.uri)}
+                                                href={getRecordHref(
+                                                    record.uri
+                                                )}
                                                 className="hover:text-primary"
                                             >
                                                 {record.name}

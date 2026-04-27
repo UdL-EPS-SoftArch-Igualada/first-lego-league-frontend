@@ -8,10 +8,10 @@ import { AddMemberForm } from './add-member-form';
 import { DeleteMemberDialog } from './delete-member-dialog';
 
 interface TeamMembersManagerProps {
-    teamId: string;
-    initialMembers: TeamMemberSnapshot[];
-    isCoach: boolean;
-    isAdmin: boolean;
+    readonly teamId: string;
+    readonly initialMembers: TeamMemberSnapshot[];
+    readonly isCoach: boolean;
+    readonly isAdmin: boolean;
 }
 
 function getMemberKey(member: TeamMemberSnapshot, index: number) {
@@ -42,8 +42,8 @@ export function TeamMembersManager({ teamId, initialMembers, isCoach, isAdmin }:
 
             {showForm && (
                 <AddMemberForm
-                    onSubmit={async (name, role, birthDate, gender) => {
-                        const success = await addMember(name, role, birthDate, gender);
+                    onSubmit={async (name, role, birthDate, gender, tShirtSize) => {
+                        const success = await addMember(name, role, birthDate, gender, tShirtSize);
                         if (success) setShowForm(false);
                         return success;
                     }}

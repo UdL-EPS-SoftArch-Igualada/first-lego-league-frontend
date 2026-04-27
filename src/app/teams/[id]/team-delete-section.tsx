@@ -5,16 +5,15 @@ import { Button } from "@/app/components/button";
 import DeleteTeamDialog from "./delete-team-dialog";
 
 interface TeamDeleteSectionProps {
-  readonly teamId: string;
-  readonly teamName: string;
+  teamId: string;
+  teamName: string;
 }
 
 export default function TeamDeleteSection({
   teamId,
   teamName,
 }: TeamDeleteSectionProps) {
-  // Keep the dialog toggle local so the server page only passes stable team data.
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <>
@@ -22,16 +21,16 @@ export default function TeamDeleteSection({
         type="button"
         variant="destructive"
         size="sm"
-        onClick={() => setIsDialogOpen(true)}
+        onClick={() => setIsOpen(true)}
       >
-        Delete team
+        Delete
       </Button>
 
-      {isDialogOpen && (
+      {isOpen && (
         <DeleteTeamDialog
           teamId={teamId}
           teamName={teamName}
-          onCancel={() => setIsDialogOpen(false)}
+          onCancel={() => setIsOpen(false)}
         />
       )}
     </>
