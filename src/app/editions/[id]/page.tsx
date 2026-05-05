@@ -278,6 +278,12 @@ export default async function EditionDetailPage(props: Readonly<EditionDetailPag
 
                             <h2 className="mt-8 mb-4 text-xl font-semibold text-foreground">Final Classification</h2>
 
+                            <div className="mb-4">
+                                <Link href={`/editions/${id}/project-ranking`} className={buttonVariants({ variant: "secondary", size: "sm" })}>
+                                    Scientific Project Ranking
+                                </Link>
+                            </div>
+
                             {classificationError && <ErrorAlert message={classificationError} />}
 
                             {!classificationError && leaderboardItems.length === 0 && (
